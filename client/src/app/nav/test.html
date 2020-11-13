@@ -1,0 +1,351 @@
+<style>
+  .deduction {
+    padding-top: 15px;
+    padding-bottom: 10px;
+    border-top: 1px solid rgb(60, 60, 60);
+  }
+  .deduction.disabled {
+    opacity: 0.7;
+  }
+  .deduction .row label {
+    min-height: 25px;
+  }
+  .icon-info {
+    font-weight: 100;
+    font-size: 12px;
+  }
+</style>
+<div
+  data-test-marker="screen-deductions-form"
+  ng-controller="MarketDeductionsAndTaxesController"
+  ng-init="control.initialise()"
+  data-sd-init-expression="control.initialise()"
+  class=""
+>
+  <div>
+    <side-panel
+      data-show="showSidePanel"
+      data-title="{{sidePanelTitle}}"
+      class="side-panel-small"
+    >
+      <div class="origin-form">
+        <div class="stack">
+          <div class="stack__item">
+            <div class="origin-form__control">
+              <div class="origin-form__label">Underwriter</div>
+              <select
+                id="qa-select-data-entry"
+                data-ui-select2="{ allowClear: false }"
+                data-ng-model="selectedQuoteDeduction.QuoteMarketId"
+              >
+                <option></option>
+                <option ng-repeat="uw in underwriterList" value="{{uw.id}}">
+                  {{uw.uwName}}
+                </option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <br />
+        <div class="stack" ng-show="territoryList.length > 0">
+          <div class="stack__item">
+            <div class="origin-form__control">
+              <div class="origin-form__label">Territory</div>
+              <select
+                ng-if="selectedType == 'D'"
+                id="qa-select-data-entry"
+                data-ui-select2="{ allowClear: false }"
+                data-ng-model="selectedQuoteDeduction.QuotePolicySectionTerritoryId"
+                data-ng-change="control.territoryChange()"
+              >
+                <option value="">All</option>
+                <option
+                  ng-repeat="territory in territoryList"
+                  value="{{territory.quoteTerritoryId}}"
+                >
+                  {{territory.label}}
+                </option>
+              </select>
+              <select
+                ng-if="selectedType == 'T'"
+                id="qa-select-data-entry"
+                data-ui-select2="{ allowClear: false }"
+                data-ng-model="selectedQuoteDeduction.QuotePolicySectionTerritoryId"
+                data-ng-change="control.territoryChange()"
+              >
+                <option
+                  ng-repeat="territory in taxTerritoryList"
+                  value="{{territory.quoteTerritoryId}}"
+                >
+                  {{territory.label}}
+                </option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <br />
+        <div class="stack">
+          <div class="stack__item">
+            <div class="origin-form__control">
+              <div class="origin-form__label">Deduction Type</div>
+              <select
+                id="qa-select-data-entry"
+                data-ui-select2="{ allowClear: false }"
+                data-ng-model="selectedQuoteDeduction.DeductionCategoryId"
+                data-ng-change="control.deductionChange()"
+              >
+                <option></option>
+                <option
+                  ng-repeat="split in filteredSplits"
+                  value="{{split.deductionCategoryId}}"
+                >
+                  {{split.categoryName}}
+                </option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <br />
+        <div class="stack">
+          <div class="stack__item">
+            <div
+              class="origin-form__control origin-form__control--margin-bottom"
+            >
+              <div class="origin-form__label">Line Expression</div>
+              <div class="toggle-button-list toggle-button-list--no-float">
+                <div
+                  class="toggle-button-list__button toggle-button-list__button--fixed-height"
+                  ng-class="{'toggle-button-list__button--selected': selectedQuoteDeduction.TaxType=='Amount'}"
+                  ng-click="control.switchTaxType('Amount')"
+                  ng-show="selectedSplit.currencyAllowed"
+                >
+                  CCY
+                </div>
+                <div
+                  class="toggle-button-list__button toggle-button-list__button--fixed-height"
+                  ng-class="{'toggle-button-list__button--selected': selectedQuoteDeduction.TaxType=='Percentage'}"
+                  ng-click="control.switchTaxType('Percentage')"
+                  ng-show="selectedSplit.percentageAllowed"
+                >
+                  %
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div ng-show="selectedQuoteDeduction.TaxType == 'Percentage'">
+          <div class="stack">
+            <div class="stack__item stack__item--spaced">
+              <div
+                class="origin-form__control origin-form__control--margin-bottom"
+              >
+                <div class="origin-form__label">Min</div>
+                <div class="input-with-icon">
+                  <input
+                    type="number"
+                    ng-model="selectedSplit.min"
+                    class="input-with-icon__input input-with-icon__input--disabled"
+                    min="0"
+                    max="100"
+                    value="selectedSplit.min"
+                    step="any"
+                    disabled=""
+                  />
+                  <div
+                    class="input-with-icon__icon input-with-icon__icon--clickable"
+                  >
+                    <span>%</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="stack__item stack__item--spaced">
+              <div
+                class="origin-form__control origin-form__control--margin-bottom"
+              >
+                <div class="origin-form__label">Rate</div>
+                <div class="input-with-icon">
+                  <input
+                    type="number"
+                    ng-model="selectedQuoteDeduction.Percentage"
+                    ng-disabled="selectedQuoteDeduction.DeductionCategoryId == 0"
+                    class="input-with-icon__input"
+                    ng-class="{'input-with-icon__input--disabled': selectedQuoteDeduction.DeductionCategoryId == 0}"
+                    min="selectedDeductionCategorySplit.min"
+                    max="selectedDeductionCategorySplit.max"
+                    value="selectedQuoteDeduction.Percentage"
+                    step="any"
+                  />
+                  <div
+                    class="input-with-icon__icon input-with-icon__icon--clickable"
+                  >
+                    <span>%</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="stack__item stack__item--spaced">
+              <div
+                class="origin-form__control origin-form__control--margin-bottom"
+              >
+                <div class="origin-form__label">Max</div>
+                <div class="input-with-icon">
+                  <input
+                    type="number"
+                    ng-model="selectedSplit.max"
+                    class="input-with-icon__input input-with-icon__input--disabled"
+                    min="0"
+                    max="100"
+                    value="selectedSplit.max"
+                    step="any"
+                    disabled=""
+                  />
+                  <div
+                    class="input-with-icon__icon input-with-icon__icon--clickable"
+                  >
+                    <span>%</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="stack__item stack__item--big"></div>
+          </div>
+        </div>
+        <div ng-show="selectedQuoteDeduction.TaxType == 'Amount'">
+          <div class="stack">
+            <div class="stack__item stack__item--spaced">
+              <div
+                class="origin-form__control origin-form__control--margin-bottom"
+              >
+                <div class="origin-form__label">Deduction Amount</div>
+                <input
+                  type="number"
+                  ng-model="selectedQuoteDeduction.Amount"
+                  value="selectedDeductionCategorySplit.defaultValue"
+                  step=".01"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+        <span
+          class="origin-form__label origin-form__label--error"
+          ng-show="errorMessage"
+          >{{errorMessage}}</span
+        >
+        <div class="side-panel__bottom-bar">
+          <button
+            ng-attr-title="{{'Cancel'|translate}}"
+            id="btn-cancel-template"
+            data-ng-click="control.closeSidePanel();"
+            class="custom-button custom-button--outline custom-button--no-margin"
+          >
+            <span class="custom-button__text">Cancel</span>
+          </button>
+          <button
+            ng-attr-title="{{'Save'|translate}}"
+            id="btn-save-template"
+            data-ng-click="control.save(selectedQuoteDeduction);"
+            class="custom-button custom-button--no-margin"
+          >
+            <span class="custom-button__text">Save</span>
+          </button>
+        </div>
+      </div>
+    </side-panel>
+    <div class="">
+      <h4 ng-if="!model.isEndorsement">
+        Product Enquiry (<a
+          id="qa-product-enquiry-details"
+          ng-attr-href="{{productEnquiryUrl}}"
+          style="padding: 5px"
+          >View Product Enquiry Details</a
+        >)
+      </h4>
+      <h4 ng-if="model.isEndorsement">
+        Endorsement Enquiry (<a
+          id="qa-product-enquiry-details"
+          ng-attr-href="{{productEnquiryUrl}}"
+          style="padding: 5px"
+          >View Endorsement Details</a
+        >)
+      </h4>
+    </div>
+    <div class="stack">
+      <a class="stack__item stack__item--right">
+        <h8 href="#" ng-click="control.openSidePanel('D')" class="stack__item">
+          <i class="icon icon-plus"></i> Deduction
+        </h8>
+        <h8 href="#" ng-click="control.openSidePanel('T')" class="stack__item">
+          <i class="icon icon-plus"></i> Tax
+        </h8>
+      </a>
+    </div>
+    <div ng-repeat="market in underwriterList">
+      <h3>{{market.uwName}}</h3>
+      <div class="stack expandable-card__row">
+        <div class="stack__item stack__item--big expandable-card__header">
+          Type
+        </div>
+        <div class="stack__item expandable-card__header">Territory</div>
+        <div class="stack__item stack__item--right">
+          <div class="stack">
+            <div class="stack__item stack__item--right expandable-card__header">
+              Amount
+            </div>
+            <div
+              class="stack__item stack__item--right expandable-card__header"
+            ></div>
+          </div>
+        </div>
+      </div>
+      <div
+        class="stack expandable-card__row"
+        ng-repeat="deduction in control.getDeductionsByMarket(market.id)"
+      >
+        <div class="stack__item stack__item--big">
+          <div class="custom-checkbox">
+            <input
+              class="custom-checkbox__input"
+              id="{{deduction.Id}}-active"
+              name="{{deduction.Id}}-active"
+              type="checkbox"
+              value="true"
+              data-val="true"
+              ng-model="deduction.Active"
+            />
+            <label class="custom-checkbox__label" for="{{deduction.Id}}-active">
+              {{deduction.Category.Name}}
+            </label>
+          </div>
+        </div>
+        <div class="stack__item">
+          {{control.getTerritoryNameById(deduction.QuotePolicySectionTerritoryId)}}
+        </div>
+        <div class="stack__item stack__item--right">
+          <div class="stack">
+            <div
+              class="stack__item stack__item--right"
+              ng-show="deduction.TaxType == 'Percentage'"
+            >
+              {{deduction.Percentage | number: 2}} %
+            </div>
+            <div
+              class="stack__item stack__item--right"
+              ng-show="deduction.TaxType == 'Amount'"
+            >
+              {{deduction.Amount}} {{currency}}
+            </div>
+            <div class="stack__item">
+              <i
+                class="expandable-card__action-icon icon-pencil"
+                ng-click="control.openSidePanel('D', deduction)"
+                ng-show="deduction.Active"
+              ></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
